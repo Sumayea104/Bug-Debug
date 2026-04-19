@@ -43,12 +43,15 @@ startQuiz.addEventListener("click", () => {
   }, 1000);
 });
 
-// All quiz data fetched from json
 const loadQuiz = async () => {
-  const res = await fetch("./quiz.json");
-  const data = await res.json(); // <--- Added () here
-  quizData = data;
-  displayQuiz(data);
+  try {
+    const res = await fetch("quiz.json"); // "./" দিলেও হবে, শুধু "quiz.json" দিলেও হবে
+    const data = await res.json(); 
+    quizData = data;
+    displayQuiz(data);
+  } catch (err) {
+    console.error("Data load logic check:", err);
+  }
 };
 
 // Displaying quiz on quiz page
