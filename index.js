@@ -13,85 +13,59 @@ let quizContainer = document.querySelector("#quizContainer");
 let answersContainer = document.querySelector("#answersContainer");
 let displayResult = document.querySelector("#displayResult");
 
-// EventListener for quiz start button
-startQuiz.addEventListener("click", () => {
-  let countDown = document.querySelector("#countDownContainer");
-  let counter = document.querySelector("#counter");
-  let counterNum = 2;
-  countDown.classList.remove("hidden");
-  countDown.classList.add("flex");
-
-  let x = setInterval(() => {
-    if (counterNum < 0) {
-      countDown.classList.remove("flex");
-      countDown.classList.add("hidden");
-      counterNum = 3;
-      count = 0;
-      timer = null;
-      quizData = null;
-      answers = [];
-      rulesContainer.classList.add("hidden");
-      alertContainer.classList.remove("hidden");
-      submitContainer.classList.remove("hidden");
-      submitContainer.classList.add("flex");
-      loadQuiz();
-      quizTimer();
-      clearInterval(x);
-    }
-    counter.innerText = counterNum;
-    counterNum--;
-  }, 1000);
-});
+// ... আগের গ্লোবাল ভেরিয়েবল এবং স্টার্ট বাটন ঠিক আছে ...
 
 const loadQuiz = async () => {
   try {
-    const res = await fetch("quiz.json"); // "./" দিলেও হবে, শুধু "quiz.json" দিলেও হবে
+    const res = await fetch("quiz.json"); 
+    if (!res.ok) throw new Error("JSON file not found");
     const data = await res.json(); 
     quizData = data;
     displayQuiz(data);
   } catch (err) {
     console.error("Data load logic check:", err);
+    quizContainer.innerHTML = `<p class="text-red-500">Failed to load quiz data.</p>`;
   }
 };
 
-// Displaying quiz on quiz page
 const displayQuiz = (data) => {
   if (!data) {
     quizContainer.innerHTML = "";
     return;
   }
 
+  quizContainer.innerHTML = ""; // আগের ডাটা ক্লিয়ার করুন
   data.forEach((quiz, i) => {
-    quizContainer.innerHTML += `<div class="m-3 py-3 px-4 shadow-sm rounded">
-  <div class="flex items-center">
-    <div class="h-8 w-8 bg-green-300 rounded-full flex justify-center items-center text-green-800 mr-3">
-      ${i + 1}
-    </div>
-    <p class="text-gray-800 text-sm">${quiz.question}</p>
-  </div>
-  <div class="grid grid-cols-2 gap-4 mt-5">
-    ${displayQuizOptions(quiz.options, i)}
-  </div>
-</div>`;
+    quizContainer.innerHTML += `<div class="m-3 py-3 px-4 shadow-sm rounded border">
+      <div class="flex items-center">
+        <div class="h-8 w-8 bg-green-300 rounded-full flex justify-center items-center text-green-800 mr-3">
+          ${i + 1}
+        </div>
+        <p class="text-gray-800 text-sm font-medium">${quiz.question}</p>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mt-5">
+        ${displayQuizOptions(quiz.options, i)}
+      </div>
+    </div>`;
   });
 };
 
-// EventListener for quiz submit button
-document.querySelector("#submit").addEventlistener("click", () => {
+// --- SUBMIT BUTTON FIX ---
+document.querySelector("#submit").addEventListener("click", () => { // L বড় হাতের হবে
   if (answers.length < 6) {
+    alert("Please answer at least 6 questions!"); // ইউজারকে জানানো
     return;
   }
+  
   quizTimer(true);
-  answersContainer.innerHTML = `<div class="my-4">
-  <i class="fa-solid fa-fan animate-spin text-2xl text-green-600"></i>
-  <p class="text-xs animate-pulse">Please Wait, We are checking...</p>
-</div>`;
+  answersContainer.innerHTML = `<div class="my-4 text-center">
+    <i class="fa-solid fa-fan animate-spin text-2xl text-green-600"></i>
+    <p class="text-xs animate-pulse">Please Wait, We are checking...</p>
+  </div>`;
+
   let timeTaken = document.querySelector("#count");
   let totalMark = 0;
-  let grade = {
-    status: "",
-    color: "",
-  };
+  let grade = { status: "", color: "" };
 
   for (let ans of answers) {
     if (ans.answer === ans.givenAns) {
@@ -102,7 +76,7 @@ document.querySelector("#submit").addEventlistener("click", () => {
   if (totalMark === 60) {
     grade.status = "Excellent";
     grade.color = "text-green-600";
-  } else if (totalMark >= 40 && totalMark < 60) {
+  } else if (totalMark >= 40) {
     grade.status = "Good";
     grade.color = "text-orange-600";
   } else {
@@ -110,33 +84,30 @@ document.querySelector("#submit").addEventlistener("click", () => {
     grade.color = "text-red-600";
   }
 
-  // data setting on local storage and getting data from local storage
-  let storage = JSON.parse(localStorage.getItem("result"));
+  // Local Storage Fix (using 'results' consistently)
+  let storage = JSON.parse(localStorage.getItem("results")); 
+  let currentResult = {
+    marks: totalMark,
+    examTime: timeTaken.innerText,
+    status: grade.status,
+  };
+
   if (storage) {
-    localStorage.setItem(
-      "results",
-      JSON.stringify([
-        ...storage,
-        {
-          marks: totalMark,
-          examTime: timeTaken.innerText,
-          status: grade.status,
-        },
-      ])
-    );
+    storage.push(currentResult);
+    localStorage.setItem("results", JSON.stringify(storage));
   } else {
-    localStorage.setItem(
-      "results",
-      JSON.stringify([
-        {
-          marks: totalMark,
-          examTime: timeTaken.innerText,
-          status: grade.status,
-        },
-      ])
-    );
+    localStorage.setItem("results", JSON.stringify([currentResult]));
   }
 
+  // Result UI update logic
+  let x = setTimeout(() => {
+    showAnswers(answers);
+    // ... আপনার displayResult.innerHTML এর কোড এখানে থাকবে ...
+    clearTimeout(x);
+  }, 1500);
+  
+  window.scrollTo(0, 0);
+});
   // Right side bar/ answer section
   let x = setTimeout(() => {
     showAnswers(answers);
